@@ -1,0 +1,11 @@
+conversation_id,turn_id,speaker,text,sentiment,resistance_flag,trust_signal,timestamp
+conv_001,1,bot,What product did you recently purchase?,0.0,0,0,0.0
+conv_001,2,user,I bought the wireless earbuds last month.,0.2,0,0,3.1
+conv_001,3,bot,How was your experience overall?,0.0,0,0,6.4
+conv_001,4,user,Honestly I liked the sound but the battery life is disappointing.,-0.2,0,1,11.8
+conv_001,5,bot,Can you tell me more about the battery issue?,0.0,0,0,15.2
+conv_001,6,user,They barely last two hours which is frustrating.,-0.6,1,1,20.5
+conv_002,1,bot,What product did you purchase?,0.0,0,0,0.0
+conv_002,2,user,Why do you need to know that?,-0.4,1,0,4.7
+conv_002,3,bot,To understand your experience better.,0.0,0,0,7.9
+conv_002,4,user,Okay I bought the blender.,-0.1,0,0,12.0

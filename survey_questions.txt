@@ -1,0 +1,7 @@
+1. How would you rate the overall quality of our gym services? | type=single_choice/vertical
+2. How satisfied are you with the communication you receive from our team? | type=single_choice/vertical
+3. How responsive have we been to any issues or concerns you have raised? | type=single_choice/vertical
+4. Overall, how satisfied are you with our consulting firm's services? | type=single_choice/vertical
+5. How likely is it that you would recommend our gym services to a friend or colleague? | type=matrix/rating
+6. What industry does your business belong to? | type=single_choice/vertical
+7. What is the size of your business? | type=single_choice/vertical
