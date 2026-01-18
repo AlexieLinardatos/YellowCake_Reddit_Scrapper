@@ -27,6 +27,8 @@ def run_extract() -> Any:
     subreddit_url = str(payload.get("url", "")).strip()
     api_key = str(payload.get("api_key", "")).strip() or os.getenv("YELLOWCAKE_API_KEY", "")
     save_path = str(payload.get("save_path", "")).strip()
+    debug_path_input = str(payload.get("debug_path", "")).strip() or "yellowcake_raw.json"
+    debug_path = os.path.abspath(debug_path_input)
 
     if not subreddit_url:
         return jsonify({"error": "Missing subreddit URL."}), 400
@@ -73,6 +75,8 @@ def run_extract() -> Any:
             sort,
             "--output-json",
             output_path,
+            "--dump-raw",
+            debug_path,
         ]
         env = os.environ.copy()
         if api_key:
@@ -128,6 +132,8 @@ def run_extract() -> Any:
         with open(save_path, "w", encoding="utf-8") as handle:
             json.dump(posts, handle, ensure_ascii=True, indent=2)
 
+    raw_exists = os.path.exists(debug_path) if use_yellowcake else False
+
     return jsonify(
         {
             "data": posts,
@@ -135,6 +141,8 @@ def run_extract() -> Any:
             "used_yellowcake": use_yellowcake,
             "api_key_present": bool(api_key),
             "saved_path": save_path or None,
+            "debug_path": debug_path if use_yellowcake else None,
+            "debug_exists": raw_exists if use_yellowcake else None,
         }
     )
 
