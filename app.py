@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
+import sys
+import tempfile
 from typing import Any, Dict
 
 from flask import Flask, jsonify, request, send_from_directory
@@ -35,40 +38,88 @@ def run_extract() -> Any:
     sort = str(payload.get("sort", "top")).strip().lower()
     use_yellowcake = bool(payload.get("use_yellowcake", True))
 
-    try:
-        if use_yellowcake:
-            posts = yellowcake_api.fetch_subreddit_posts_yellowcake(
-                subreddit_url,
-                api_key=api_key,
-                max_posts=max_posts,
-                comments_per_post=comments_per_post,
-                sort=sort,
-            )
-        else:
+    if not use_yellowcake:
+        try:
             posts = yellowcake_api.fetch_subreddit_posts(
                 subreddit_url,
                 max_posts=max_posts,
                 comments_per_post=comments_per_post,
                 sort=sort,
             )
-    except requests.RequestException as exc:
-        return jsonify(
-            {
-                "error": "Yellowcake request failed.",
-                "detail": str(exc),
-                "used_yellowcake": use_yellowcake,
-                "api_key_present": bool(api_key),
-            }
-        ), 502
-    except Exception as exc:
-        return jsonify(
-            {
-                "error": "Extraction failed.",
-                "detail": str(exc),
-                "used_yellowcake": use_yellowcake,
-                "api_key_present": bool(api_key),
-            }
-        ), 500
+        except requests.RequestException as exc:
+            return jsonify(
+                {
+                    "error": "Reddit request failed.",
+                    "detail": str(exc),
+                    "used_yellowcake": use_yellowcake,
+                    "api_key_present": bool(api_key),
+                }
+            ), 502
+    else:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as handle:
+            output_path = handle.name
+
+        cmd = [
+            sys.executable,
+            "yellowcake_api.py",
+            "--subreddit-url",
+            subreddit_url,
+            "--max-posts",
+            str(max_posts),
+            "--comments-per-post",
+            str(comments_per_post),
+            "--use-yellowcake",
+            "--sort",
+            sort,
+            "--output-json",
+            output_path,
+        ]
+        env = os.environ.copy()
+        if api_key:
+            env["YELLOWCAKE_API_KEY"] = api_key
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=False,
+                env=env,
+            )
+        except OSError as exc:
+            return jsonify(
+                {
+                    "error": "Extraction failed.",
+                    "detail": str(exc),
+                    "used_yellowcake": use_yellowcake,
+                    "api_key_present": bool(api_key),
+                }
+            ), 500
+        if result.returncode != 0:
+            return jsonify(
+                {
+                    "error": "Extraction failed.",
+                    "detail": result.stderr.strip() or result.stdout.strip() or "Unknown error.",
+                    "used_yellowcake": use_yellowcake,
+                    "api_key_present": bool(api_key),
+                }
+            ), 500
+        try:
+            with open(output_path, "r", encoding="utf-8") as handle:
+                posts = json.load(handle)
+        except (OSError, json.JSONDecodeError) as exc:
+            return jsonify(
+                {
+                    "error": "Extraction failed.",
+                    "detail": str(exc),
+                    "used_yellowcake": use_yellowcake,
+                    "api_key_present": bool(api_key),
+                }
+            ), 500
+        finally:
+            try:
+                os.remove(output_path)
+            except OSError:
+                pass
 
     if save_path:
         save_dir = os.path.dirname(save_path)
